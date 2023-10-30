@@ -23,8 +23,8 @@ columns = ['MedInc', 'HouseAge', 'AveRooms', 'AveBedrms', 'Population', 'AveOccu
 df = pd.DataFrame(x_train, columns=columns)
 df['Target_price'] = y_train  # target values
 
-# Construct a validation set with 20% test and 80% train
-x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.2, random_state=40)
+# Construct a validation set with 25% test
+x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.25, random_state=40)
 
 # print main info about the investigate feature distributions
 df_info = df.describe()
@@ -53,6 +53,8 @@ x_val = scaler.transform(x_val)
 
 # neural network model
 def create_NNM(hidden_units, hidden_layers):
+    model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
+
     # Configure the model layers
     model = Sequential()
 
@@ -68,13 +70,13 @@ def create_NNM(hidden_units, hidden_layers):
     # Compiling the model
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
 
-    return model
+    return model, model_name
 
 
 # Define a function to train the model and return training and validation errors
-def train_and_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epochs):
+def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epochs, model_name):
     # Configure the model training procedure
-    model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=epochs,
+    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=epochs,
                         verbose=0)
 
     # Calculate training and validation set errors
@@ -82,6 +84,17 @@ def train_and_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, 
     y_val_pred = model.predict(x_val)
     train_error = mean_squared_error(y_train, y_train_pred)
     val_error = mean_squared_error(y_val, y_val_pred)
+    print(train_error)
+
+    # plot results
+    plt.figure()
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Evolution of training and validation error for model {}'.format(model_name))
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'validation'], loc='best')
+    plt.show()
 
     return train_error, val_error
 
@@ -89,8 +102,8 @@ def train_and_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, 
 # Define hyperparameters and architectures to test
 hidden_units_list = [32, 64, 128]
 hidden_layers_list = [1, 2, 3]
-batch_size = 64
-epochs = 50
+batch_size = 20
+epochs = 60
 
 # Create a table to store results
 results = []
@@ -98,15 +111,15 @@ results = []
 # Loop through different architectures and evaluate
 for hidden_units in hidden_units_list:
     for hidden_layers in hidden_layers_list:
-        model = create_NNM(hidden_units, hidden_layers)
-        train_error, val_error = train_and_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epochs)
+        model, model_name = create_NNM(hidden_units, hidden_layers)
+        train_error, val_error = train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epochs, model_name)
         results.append([hidden_units, hidden_layers, train_error, val_error])
 
 # Print the results in a table
 print("Architecture | Hidden Units | Hidden Layers | Train Error | Validation Error")
 for result in results:
     print(
-        f"{result[0]}-{result[1]}         | {result[0]}            | {result[1]}             | {result[2]:.4f}      | {result[3]:.4f}")
+        f"{result[0]}-{result[1]}    | {result[0]}     | {result[1]}     | {result[2]:.4f}      | {result[3]:.4f}")
 
 
 # ------------------------------------------------------ c -------------------------------------------------------------
