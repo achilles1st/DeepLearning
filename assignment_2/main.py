@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+import numpy as np
 
 import tensorflow as tf
 from tensorflow import keras
@@ -23,6 +24,11 @@ columns = ['MedInc', 'HouseAge', 'AveRooms', 'AveBedrms', 'Population', 'AveOccu
 df = pd.DataFrame(x_train, columns=columns)
 df['Target_price'] = y_train  # target values
 
+# Normalize the data since it is not
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_test = scaler.transform(x_test)
+
 # Construct a validation set with 25% test
 x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.25, random_state=40)
 
@@ -38,16 +44,7 @@ for i, column in enumerate(df.columns):
     plt.title(column)
 plt.show()
 
-# Normalize the data since it is not
-scaler = StandardScaler()
-x_train = scaler.fit_transform(x_train)
-x_val = scaler.transform(x_val)
 
-# # Verify that the data is now normalized
-# df_normalized = pd.DataFrame(x_train, columns=columns)
-# df_normalized['Target_price'] = y_train
-# df_info_normalized = df_normalized.describe()
-# print(df_info_normalized)
 
 # ------------------------------------------------------ b -------------------------------------------------------------
 
@@ -59,7 +56,7 @@ def create_NNM(hidden_units, hidden_layers):
     model = Sequential()
 
     # Input layer
-    model.add(Input(shape=(8,)))
+    model.add(Dense(units=hidden_units, input_dim=8, kernel_initializer='normal', activation='relu'))
 
     # Hidden layers
     for _ in range(hidden_layers):
@@ -68,23 +65,19 @@ def create_NNM(hidden_units, hidden_layers):
     # Only one output layer since we have a regression task
     model.add(Dense(1, activation='linear'))
     # Compiling the model
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    model.compile(loss='mean_squared_error', optimizer="adam", metrics=['mse'])
 
     return model, model_name
 
 
 # Define a function to train the model and return training and validation errors
-def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epochs, model_name):
+def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epochs, model_name, x_test, y_test):
     # Configure the model training procedure
     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=epochs,
                         verbose=0)
 
-    # Calculate training and validation set errors
-    y_train_pred = model.predict(x_train)
-    y_val_pred = model.predict(x_val)
-    train_error = mean_squared_error(y_train, y_train_pred)
-    val_error = mean_squared_error(y_val, y_val_pred)
-    print(train_error)
+    # score, acc = model.evaluate(x_test, y_test, batch_size=batch_size)
+
 
     # plot results
     plt.figure()
@@ -96,14 +89,19 @@ def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epoc
     plt.legend(['train', 'validation'], loc='best')
     plt.show()
 
-    return train_error, val_error
+    #return train_error, val_error
 
 
 # Define hyperparameters and architectures to test
 hidden_units_list = [32, 64, 128]
 hidden_layers_list = [1, 2, 3]
-batch_size = 20
+batch_size = 100
 epochs = 60
+learning_rate = 0.01
+
+# optimizers
+sgd = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9, nesterov=False)
+adam = tf.keras.optimizers.Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, amsgrad=False)
 
 # Create a table to store results
 results = []
@@ -112,8 +110,10 @@ results = []
 for hidden_units in hidden_units_list:
     for hidden_layers in hidden_layers_list:
         model, model_name = create_NNM(hidden_units, hidden_layers)
-        train_error, val_error = train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epochs, model_name)
-        results.append([hidden_units, hidden_layers, train_error, val_error])
+        train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epochs,
+                                                      model_name, x_test, y_test)
+
+        #results.append([hidden_units, hidden_layers, train_error, val_error])
 
 # Print the results in a table
 print("Architecture | Hidden Units | Hidden Layers | Train Error | Validation Error")
