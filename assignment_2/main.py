@@ -83,7 +83,7 @@ def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epoc
     plt.figure()
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
-    plt.title('Evolution of training and validation error for model {}'.format(model_name))
+    plt.title('Evolution of training and validation error for model {}'.format(model_name) + f"_batch_{batch_size}")
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='best')
@@ -94,35 +94,36 @@ def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epoc
 # Define hyperparameters and architectures to test
 hidden_units_list = [64, 128, 256]
 hidden_layers_list = [1, 2, 3]
-batch_size = 32
+batch_sizes = [16, 32, 64]
 epochs = 70
-learning_rate = 0.01
-
-# optimizers
-sgd = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9, nesterov=False)
-adam = tf.keras.optimizers.Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, amsgrad=False)
 
 # Create a table to store results
 results = []
+for batch_size in batch_sizes:
+    # Loop through different architectures and evaluate
+    for hidden_units in hidden_units_list:
+        for hidden_layers in hidden_layers_list:
+            model, model_name = create_NNM(hidden_units, hidden_layers)
+            test_loss, test_accuracy = train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epochs,
+                                                          model_name, x_test, y_test)
 
-# Loop through different architectures and evaluate
-for hidden_units in hidden_units_list:
-    for hidden_layers in hidden_layers_list:
-        model, model_name = create_NNM(hidden_units, hidden_layers)
-        test_loss, test_accuracy = train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epochs,
-                                                      model_name, x_test, y_test)
-
-        results.append([hidden_units, hidden_layers, test_loss, test_accuracy])
+            results.append([hidden_units, hidden_layers, test_loss, batch_size])
 
 # Print the results in a table
-print("Architecture | Hidden Units | Hidden Layers | Train Error | Validation Error")
+print("Architecture | Hidden Units | Hidden Layers | Train Error | batch size")
 for result in results:
     print(
         f"{result[0]}-{result[1]}    | {result[0]}     | {result[1]}     | {result[2]:.4f}      | {result[3]:.4f}")
 
 
 # ------------------------------------------------------ c -------------------------------------------------------------
+hidden_unit = 128
+hidden_layer = 2
+learning_rates = [0.01]
 
+# optimizers
+#sgd = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9, nesterov=False)
+#adam = tf.keras.optimizers.Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, amsgrad=False)
 
 
 
