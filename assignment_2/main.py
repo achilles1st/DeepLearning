@@ -30,8 +30,7 @@ x_train = scaler.fit_transform(x_train)
 x_test = scaler.transform(x_test)
 
 # Construct a validation set with 25% test
-x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.25, random_state=40)
-
+x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.25, random_state=42)
 # print main info about the investigate feature distributions
 df_info = df.describe()
 #print(df_info)
@@ -56,17 +55,17 @@ def create_NNM(hidden_units, hidden_layers):
     model = Sequential()
 
     # Input layer
-    model.add(Dense(units=hidden_units, input_dim=8, kernel_initializer='normal', activation='relu'))
+    model.add(Dense(units=hidden_units, input_dim=8, kernel_initializer='normal', activation='tanh'))
 
     # Hidden layers
     for _ in range(hidden_layers):
-        model.add(Dense(hidden_units, activation='relu'))
+        model.add(Dense(hidden_units, activation='tanh'))
 
     # Only one output layer since we have a regression task
     model.add(Dense(1, activation='linear'))
     # Compiling the model
     model.compile(loss='mean_squared_error', optimizer="adam", metrics=['mse'])
-
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', restore_best_weights=True)
     return model, model_name
 
 
@@ -76,7 +75,8 @@ def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epoc
     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=epochs,
                         verbose=0)
 
-    # score, acc = model.evaluate(x_test, y_test, batch_size=batch_size)
+    test_loss, test_accuracy = model.evaluate(x_test, y_test, batch_size=batch_size)
+
 
 
     # plot results
@@ -89,14 +89,13 @@ def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epoc
     plt.legend(['train', 'validation'], loc='best')
     plt.show()
 
-    #return train_error, val_error
-
+    return test_loss, test_accuracy
 
 # Define hyperparameters and architectures to test
-hidden_units_list = [32, 64, 128]
+hidden_units_list = [64, 128, 256]
 hidden_layers_list = [1, 2, 3]
-batch_size = 100
-epochs = 60
+batch_size = 32
+epochs = 70
 learning_rate = 0.01
 
 # optimizers
@@ -110,10 +109,10 @@ results = []
 for hidden_units in hidden_units_list:
     for hidden_layers in hidden_layers_list:
         model, model_name = create_NNM(hidden_units, hidden_layers)
-        train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epochs,
+        test_loss, test_accuracy = train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epochs,
                                                       model_name, x_test, y_test)
 
-        #results.append([hidden_units, hidden_layers, train_error, val_error])
+        results.append([hidden_units, hidden_layers, test_loss, test_accuracy])
 
 # Print the results in a table
 print("Architecture | Hidden Units | Hidden Layers | Train Error | Validation Error")
@@ -123,3 +122,9 @@ for result in results:
 
 
 # ------------------------------------------------------ c -------------------------------------------------------------
+
+
+
+
+
+
