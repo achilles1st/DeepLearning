@@ -88,7 +88,7 @@ def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epoc
     plt.legend(['train', 'validation'], loc='best')
     # plt.show()
 
-    plt.savefig('figures/{}.png'.format(model_name) + f"_batch_{batch_size}")
+    plt.savefig(f'figures/{model_name}' + f"_batch_{batch_size}" + ".png")
 
     val_error = history.history['val_loss']
     return test_loss, test_accuracy, val_error[-1]
