@@ -87,9 +87,9 @@ def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epoc
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='best')
     # plt.show()
-
-    plt.savefig('figures/{}.png'.format(model_name) + f"_batch_{batch_size}")
-
+    name = (str(model_name) + '-' + str(batch_size))
+    plt.savefig(f'figures/{name}.png')
+    print(name)
     val_error = history.history['val_loss']
     return test_loss, test_accuracy, val_error[-1]
 
@@ -97,7 +97,7 @@ def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epoc
 # Define hyperparameters and architectures to test
 hidden_units_list = [4, 8, 16, 32, 64, 128, 256]
 hidden_layers_list = [1, 2, 3]
-batch_sizes = [4, 8, 16, 32,64,128,256]
+batch_sizes = [8, 16, 32, 64, 128, 256]
 epochs = 300
 
 # Create a table to store results
@@ -112,7 +112,6 @@ for batch_size in batch_sizes:
                                                                        early_stopping)
 
             results.append([hidden_units, hidden_layers, test_loss, batch_size, val_error])
-            print(hidden_layers)
 
 # Print the results in a table
 print(" Hidden Units | Hidden Layers | batch size | Train Error | Val Error")
