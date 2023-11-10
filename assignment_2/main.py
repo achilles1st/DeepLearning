@@ -87,9 +87,15 @@ def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epoc
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='best')
     # plt.show()
+<<<<<<< HEAD
     name = (str(model_name) + '-' + str(batch_size))
     plt.savefig(f'figures/{name}.png')
     print(name)
+=======
+
+    plt.savefig(f'figures/{model_name}' + f"_batch_{batch_size}" + ".png")
+
+>>>>>>> 079153b4cb3d5e36f8d390591ac667f6f66be8a9
     val_error = history.history['val_loss']
     return test_loss, test_accuracy, val_error[-1]
 
