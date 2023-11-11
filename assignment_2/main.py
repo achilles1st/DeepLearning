@@ -375,12 +375,86 @@ df_info = df.describe()
 
 # ------------------------------------------------------ d -------------------------------------------------------------
 # final used architecture
+# hidden_units = 32
+# hidden_layers = 2
+# batch_size = 128
+# epochs = 300
+#
+#
+# def create_NNM(hidden_units, hidden_layers):
+#     model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
+#
+#     # Configure the model layers
+#     model = Sequential()
+#
+#     # Input layer
+#     model.add(Dense(units=hidden_units, input_dim=8, kernel_initializer='normal', activation='tanh'))
+#
+#     # Hidden layers
+#     for _ in range(hidden_layers):
+#         model.add(Dense(hidden_units, activation='tanh'))
+#
+#     # Only one output layer since we have a regression task
+#     model.add(Dense(1, activation='linear'))
+#     # Compiling the model
+#     model.summary()
+#
+#     model.compile(loss='mean_squared_error', optimizer="adam", metrics=['mse'])
+#     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=15, restore_best_weights=True)
+#
+#     return model, model_name, early_stopping
+#
+#
+# # Define a function to train the model and return training and validation errors
+# def train_evaluate_model(model, x_train, y_train, batch_size, epochs, model_name, x_test, y_test,
+#                          early_stopping):
+#     # Configure the model training procedure
+#     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=epochs,
+#                         verbose=0)
+#
+#     test_loss, test_accuracy = model.evaluate(x_test, y_test, batch_size=batch_size)
+#
+#     # # # plot results
+#     plt.figure()
+#     plt.plot(history.history['loss'])
+#     plt.title('Evolution of training and validation error for model {}'.format(model_name) + f"_batch_{batch_size}")
+#     plt.ylabel('loss')
+#     plt.xlabel('epoch')
+#     plt.legend(['train', 'validation'], loc='best')
+#     plt.show()
+#     plt.savefig(f'Whole_training.png')
+#     loss = history.history['loss']
+#     return test_loss, test_accuracy, loss[-1]
+#
+#
+# model, model_name, early_stopping = create_NNM(hidden_units, hidden_layers)
+# test_loss, test_accuracy, loss = train_evaluate_model(model, x_train_full, y_train_full,
+#                                                            batch_size, epochs, model_name, x_test, y_test,
+#                                                            early_stopping)
+# print("Whole training set")
+# print("Train Error")
+# print("{}".format(loss))
+
+# ------------------------------------------------------ e -------------------------------------------------------------
+
+
 hidden_units = 32
 hidden_layers = 2
 batch_size = 128
 epochs = 300
 
+# output layer
+# model.add(Dense(1, activation='sigmoid'))
 
+
+# compile
+# model.compile(optimizer='your_optimizer', loss='binary_crossentropy', metrics=['accuracy'])
+
+y_train[y_train < 2], y_test[y_test < 2] = 0, 0
+y_train[y_train >= 2], y_test[y_test >= 2] = 1, 1
+
+
+# neural network model
 def create_NNM(hidden_units, hidden_layers):
     model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
 
@@ -395,12 +469,13 @@ def create_NNM(hidden_units, hidden_layers):
         model.add(Dense(hidden_units, activation='tanh'))
 
     # Only one output layer since we have a regression task
-    model.add(Dense(1, activation='linear'))
+    model.add(Dense(1, activation='sigmoid'))
+
     # Compiling the model
     model.summary()
 
-    model.compile(loss='mean_squared_error', optimizer="adam", metrics=['mse'])
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True)
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=30, restore_best_weights=True)
 
     return model, model_name, early_stopping
 
@@ -409,40 +484,28 @@ def create_NNM(hidden_units, hidden_layers):
 def train_evaluate_model(model, x_train, y_train, batch_size, epochs, model_name, x_test, y_test,
                          early_stopping):
     # Configure the model training procedure
-    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=epochs,
-                        verbose=0)
+    history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs,
+                        verbose=0, callbacks=[early_stopping])
 
     test_loss, test_accuracy = model.evaluate(x_test, y_test, batch_size=batch_size)
 
     # # # plot results
     plt.figure()
     plt.plot(history.history['loss'])
-    plt.title('Evolution of training and validation error for model {}'.format(model_name) + f"_batch_{batch_size}")
+    plt.title(
+        'Binary evolution of training and validation error for model {}'.format(model_name) + f"_batch_{batch_size}")
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='best')
     plt.show()
-    plt.savefig(f'Whole_training.png')
-    val_error = history.history['loss']
-    return test_loss, test_accuracy, val_error[-1]
+    name = (str(model_name) + '-' + str(batch_size))
+    plt.savefig(f'Binary.png')
+
+    return test_loss, test_accuracy
 
 
 model, model_name, early_stopping = create_NNM(hidden_units, hidden_layers)
-test_loss, test_accuracy, val_error = train_evaluate_model(model, x_train_full, y_train_full,
-                                                           batch_size, epochs, model_name, x_test, y_test,
-                                                           early_stopping)
-print("Whole training set")
-print("Train Error")
-print("{}".format(val_error))
-
-# ------------------------------------------------------ e -------------------------------------------------------------
-
-# output layer
-# model.add(Dense(1, activation='sigmoid'))
-
-
-# compile
-# model.compile(optimizer='your_optimizer', loss='binary_crossentropy', metrics=['accuracy'])
-
-y_train[y_train < 2], y_test[y_test < 2] = 0, 0
-y_train[y_train >= 2], y_test[y_test >= 2] = 1, 1
+test_loss, test_accuracy = train_evaluate_model(model, x_train, y_train, batch_size, epochs, model_name,
+                                                x_test, y_test, early_stopping)
+print("Test Loss | Test accuracy")
+print("{}|{}".format(test_loss, test_accuracy))
