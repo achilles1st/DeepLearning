@@ -45,6 +45,46 @@ df_info = df.describe()
 #     plt.title(column)
 # plt.show()
 
+# print(x_train.shape)
+# print(y_train.shape)
+# print(x_test.shape)
+# print(y_test.shape)
+# print("------------------")
+#
+# print(max(y_train))
+# print(min(y_train))
+# print("------------------")
+# med_income = x_train[:, 0]
+# print(min(med_income))
+# print(max(med_income))
+# house_age = x_train[:, 1]
+# print(min(house_age))
+# print(max(house_age))
+# avg_rooms = x_train[:, 2]
+# print(min(avg_rooms))
+# print(max(avg_rooms))
+# avg_brooms = x_train[:, 3]
+# print(min(avg_brooms))
+# print(max(avg_brooms))
+# pop = x_train[:, 4]
+# print(min(pop))
+# print(max(pop))
+# avg_occup = x_train[:, 5]
+# print(min(avg_occup))
+# print(max(avg_occup))
+# coordinates = x_train[:, -2:]
+# target = y_train
+#
+#
+#
+# sns.scatterplot(x=coordinates[:, 0], y=coordinates[:, 1],
+#                 size=target, hue=target, palette="viridis", alpha=0.5)
+# plt.legend(title="Value", loc="upper right")
+# plt.axis([31, 43, -125, -113])
+# plt.title("North-West position of houses")
+# plt.xlabel('Latitude')
+# plt.ylabel('Longitude')
+# plt.show()
 
 # ------------------------------------------------------ b -------------------------------------------------------------
 
