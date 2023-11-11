@@ -374,11 +374,12 @@ df_info = df.describe()
 
 
 # ------------------------------------------------------ d -------------------------------------------------------------
-#final used architecture
+# final used architecture
 hidden_units = 32
 hidden_layers = 2
 batch_size = 128
 epochs = 300
+
 
 def create_NNM(hidden_units, hidden_layers):
     model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
@@ -425,9 +426,23 @@ def train_evaluate_model(model, x_train, y_train, batch_size, epochs, model_name
     val_error = history.history['loss']
     return test_loss, test_accuracy, val_error[-1]
 
+
 model, model_name, early_stopping = create_NNM(hidden_units, hidden_layers)
 test_loss, test_accuracy, val_error = train_evaluate_model(model, x_train_full, y_train_full,
-                                                        batch_size, epochs, model_name, x_test, y_test, early_stopping)
+                                                           batch_size, epochs, model_name, x_test, y_test,
+                                                           early_stopping)
 print("Whole training set")
 print("Train Error")
 print("{}".format(val_error))
+
+# ------------------------------------------------------ e -------------------------------------------------------------
+
+# output layer
+# model.add(Dense(1, activation='sigmoid'))
+
+
+# compile
+# model.compile(optimizer='your_optimizer', loss='binary_crossentropy', metrics=['accuracy'])
+
+y_train[y_train < 2], y_test[y_test < 2] = 0, 0
+y_train[y_train >= 2], y_test[y_test >= 2] = 1, 1
