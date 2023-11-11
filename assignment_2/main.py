@@ -86,24 +86,23 @@ def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epoc
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='best')
-    # plt.show()
-<<<<<<< HEAD
-    name = (str(model_name) + '-' + str(batch_size))
-    plt.savefig(f'figures/{name}.png')
-    print(name)
-=======
-
-    plt.savefig(f'figures/{model_name}' + f"_batch_{batch_size}" + ".png")
-
->>>>>>> 079153b4cb3d5e36f8d390591ac667f6f66be8a9
+    plt.show()
+    # name = (str(model_name) + '-' + str(batch_size))
+    # plt.savefig(f'figures/{name}.png')
+    # print(name)
     val_error = history.history['val_loss']
     return test_loss, test_accuracy, val_error[-1]
 
 
 # Define hyperparameters and architectures to test
-hidden_units_list = [4, 8, 16, 32, 64, 128, 256]
-hidden_layers_list = [1, 2, 3]
-batch_sizes = [8, 16, 32, 64, 128, 256]
+# hidden_units_list = [4, 8, 16, 32, 64, 128, 256]
+# hidden_layers_list = [1, 2, 3]
+# batch_sizes = [8, 16, 32, 64, 128, 256]
+
+#final used architecture
+hidden_units_list = [32]
+hidden_layers_list = [2]
+batch_sizes = [128]
 epochs = 300
 
 # Create a table to store results
