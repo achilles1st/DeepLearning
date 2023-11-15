@@ -4,6 +4,11 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers.experimental import SGD
+from tensorflow.keras.optimizers.legacy import SGD as momSGD
+from tensorflow.keras.optimizers import schedules
 
 import tensorflow as tf
 from tensorflow import keras
@@ -12,8 +17,249 @@ from keras.models import Sequential
 from keras.layers import Dense, Input, Dropout, Activation
 from keras.callbacks import EarlyStopping
 
-# ------------------------------------------------------ a -------------------------------------------------------------
 
+# ---------------------------------------------------Functions----------------------------------------------------------
+# ------------------------------------------------------ a -------------------------------------------------------------
+# neural network model
+
+
+def create_NNM_regression(hidden_units, hidden_layers):
+    model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
+
+    # Configure the model layers
+    model = Sequential()
+
+    # Input layer
+    model.add(Dense(units=hidden_units, input_dim=8, kernel_initializer='normal', activation='tanh'))
+
+    # Hidden layers
+    for _ in range(hidden_layers):
+        model.add(Dense(hidden_units, activation='tanh'))
+
+    # Only one output layer since we have a regression task
+    model.add(Dense(1, activation='linear'))
+    # Compiling the model
+    model.summary()
+
+    model.compile(loss='mean_squared_error', optimizer="adam", metrics=['mse'])
+
+    return model, model_name
+
+
+def train_evaluate_model_with_val(model, x_train, y_train, x_val, y_val, batch_size, epochs, x_test, y_test):
+    # Configure the model training procedure
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True)
+
+    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=epochs,
+                        verbose=0, callbacks=[early_stopping])
+
+    train_loss, test_accuracy = model.evaluate(x_test, y_test, batch_size=batch_size)
+
+    # # plot results
+    plt.figure()
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Evolution of training and validation error for model {}'.format(model_name) + f"_batch_{batch_size}")
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'validation'], loc='best')
+    plt.show()
+    name = (str(model_name) + '-' + str(batch_size))
+    plt.savefig(f'Final.png')
+
+    val_error = history.history['val_loss']
+    train_loss = history.history['loss']
+
+    return train_loss[-1], test_accuracy, val_error[-1]
+
+
+# ------------------------------------------------------ e -------------------------------------------------------------
+
+
+def create_NNM_regression_ADAM(hidden_units, hidden_layers):
+    model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
+
+    # Configure the model layers
+    model = Sequential()
+
+    # Input layer
+    model.add(Dense(units=hidden_units, input_dim=8, kernel_initializer='normal', activation='tanh'))
+
+    # Hidden layers
+    for _ in range(hidden_layers):
+        model.add(Dense(hidden_units, activation='tanh'))
+
+    # Only one output layer since we have a regression task
+    model.add(Dense(1, activation='linear'))
+    # Compiling the model
+    model.summary()
+
+    model.compile(loss='mean_squared_error', optimizer=Adam(), metrics=['mse'])
+
+    return model, model_name
+
+
+def create_NNM_regression_SGD(hidden_units, hidden_layers):
+    model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
+
+    # Configure the model layers
+    model = Sequential()
+
+    # Input layer
+    model.add(Dense(units=hidden_units, input_dim=8, kernel_initializer='normal', activation='tanh'))
+
+    # Hidden layers
+    for _ in range(hidden_layers):
+        model.add(Dense(hidden_units, activation='tanh'))
+
+    # Only one output layer since we have a regression task
+    model.add(Dense(1, activation='linear'))
+    # Compiling the model
+    model.summary()
+
+    model.compile(loss='mean_squared_error', optimizer=SGD(), metrics=['mse'])
+
+    return model, model_name
+
+
+def create_NNM_regression_momSGD(hidden_units, hidden_layers):
+    model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
+
+    # Configure the model layers
+    model = Sequential()
+
+    # Input layer
+    model.add(Dense(units=hidden_units, input_dim=8, kernel_initializer='normal', activation='tanh'))
+
+    # Hidden layers
+    for _ in range(hidden_layers):
+        model.add(Dense(hidden_units, activation='tanh'))
+
+    # Only one output layer since we have a regression task
+    model.add(Dense(1, activation='linear'))
+    # Compiling the model
+    model.summary()
+
+    model.compile(loss='mean_squared_error', optimizer=momSGD(), metrics=['mse'])
+
+    return model, model_name
+
+
+def create_NNM_regression_learning_rate(hidden_units, hidden_layers, learning_rate):
+    model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
+
+    # Configure the model layers
+    model = Sequential()
+
+    # Input layer
+    model.add(Dense(units=hidden_units, input_dim=8, kernel_initializer='normal', activation='tanh'))
+
+    # Hidden layers
+    for _ in range(hidden_layers):
+        model.add(Dense(hidden_units, activation='tanh'))
+
+    # Only one output layer since we have a regression task
+    model.add(Dense(1, activation='linear'))
+    # Compiling the model
+    model.summary()
+
+    model.compile(loss='mean_squared_error', optimizer=Adam(learning_rate=learning_rate), metrics=['mse'])
+
+    return model, model_name
+
+
+# ------------------------------------------------------ d -------------------------------------------------------------
+
+
+def train_evaluate_model_whole_training_set(model, x_train, y_train, batch_size, epochs, model_name, x_test, y_test):
+    # Configure the model training procedure
+
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='mse', patience=30, restore_best_weights=True)
+
+    history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs,
+                        verbose=0, callbacks=[early_stopping])
+
+    train_loss, test_accuracy = model.evaluate(x_test, y_test, batch_size=batch_size)
+    y_pred = model.predict(x_test)
+
+    # # # plot results
+    plt.figure()
+    plt.plot(history.history['loss'])
+    plt.title('Evolution of training error for model {}'.format(model_name) + f"_batch_{batch_size}")
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'validation'], loc='best')
+    plt.show()
+    plt.savefig(f'figures/Whole_training.png')
+
+    y = np.arange(0, len(y_pred), 1)
+
+    plt.figure()
+    plt.scatter(y, abs(y_pred))
+    plt.scatter(y, y_test)
+    plt.legend(title="Set", loc="upper right")
+
+    plt.xlabel('predicted values')
+    plt.title('Scatter Plot predicted vs. test')
+    plt.show()
+    plt.savefig('figures/Scatterplot_predicted_test.png')
+
+    loss = history.history['loss']
+    return train_loss, test_accuracy, loss[-1]
+
+
+# ------------------------------------------------------ d -------------------------------------------------------------
+
+
+def create_NNM_classification_classification(hidden_units, hidden_layers):
+    model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
+
+    # Configure the model layers
+    model = Sequential()
+
+    # Input layer
+    model.add(Dense(units=hidden_units, input_dim=8, kernel_initializer='normal', activation='tanh'))
+
+    # Hidden layers
+    for _ in range(hidden_layers):
+        model.add(Dense(hidden_units, activation='tanh'))
+
+    # Only one output layer since we have a regression task
+    model.add(Dense(1, activation='sigmoid'))
+
+    # Compiling the model
+    model.summary()
+
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+    return model, model_name
+
+
+def train_evaluate_model_classification(model, x_train, y_train, batch_size, epochs, model_name, x_test, y_test):
+    # Configure the model training procedure
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=30, restore_best_weights=True)
+
+    history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs,
+                        verbose=0, callbacks=[early_stopping])
+
+    train_loss, test_accuracy = model.evaluate(x_test, y_test, batch_size=batch_size)
+
+    # # # plot results
+    plt.figure()
+    plt.plot(history.history['loss'])
+    plt.title(
+        'Binary evolution of training and validation error for model {}'.format(model_name) + f"_batch_{batch_size}")
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'validation'], loc='best')
+    plt.show()
+    name = (str(model_name) + '-' + str(batch_size))
+    plt.savefig(f'Binary.png')
+
+    return train_loss, test_accuracy
+
+
+# ------------------------------------------------------Init------------------------------------------------------------
 # loading data
 data_dict = pickle.load(open("california-housing-dataset.pkl", "rb"))
 
@@ -27,14 +273,30 @@ df = pd.DataFrame(x_train, columns=columns)
 df['Target_price'] = y_train  # target values
 
 # Normalize the data since it is not
-scaler = StandardScaler()
+scaler = MinMaxScaler(feature_range=(0, 1))
 x_train = scaler.fit_transform(x_train)
 x_test = scaler.transform(x_test)
 
+scaler = MinMaxScaler(feature_range=(0, 1))
+x_train_full = scaler.fit_transform(x_train_full)
+x_test = scaler.transform(x_test)
+
 # Construct a validation set with 25% test
-# x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.25, random_state=42)
+x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.25, random_state=42)
+
+# final used architecture
+hidden_units = 32
+hidden_layers = 2
+batch_size = 128
+epochs = 300
+
+# ------------------------------------------------------Mains------------------------------------------------------------
+# ------------------------------------------------------ a -------------------------------------------------------------
+
+
 # print main info about the investigate feature distributions
-df_info = df.describe()
+# df_info = df.describe()
+
 # print(df_info)
 
 # Visualize feature distributions
@@ -88,79 +350,31 @@ df_info = df.describe()
 
 # ------------------------------------------------------ b -------------------------------------------------------------
 
-# neural network model
-# def create_NNM(hidden_units, hidden_layers):
-#     model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
-#
-#     # Configure the model layers
-#     model = Sequential()
-#
-#     # Input layer
-#     model.add(Dense(units=hidden_units, input_dim=8, kernel_initializer='normal', activation='tanh'))
-#
-#     # Hidden layers
-#     for _ in range(hidden_layers):
-#         model.add(Dense(hidden_units, activation='tanh'))
-#
-#     # Only one output layer since we have a regression task
-#     model.add(Dense(1, activation='linear'))
-#     # Compiling the model
-#     model.summary()
-#
-#     model.compile(loss='mean_squared_error', optimizer="adam", metrics=['mse'])
-#     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True)
-#
-#     return model, model_name, early_stopping
-#
-#
-# # Define a function to train the model and return training and validation errors
-# def train_evaluate_model(model, x_train, y_train, x_val, y_val, batch_size, epochs, model_name, x_test, y_test,
-#                          early_stopping):
-#     # Configure the model training procedure
-#     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=epochs,
-#                         verbose=0, callbacks=[early_stopping])
-#
-#     test_loss, test_accuracy = model.evaluate(x_test, y_test, batch_size=batch_size)
-#
-#     # # # plot results
-#     plt.figure()
-#     plt.plot(history.history['loss'])
-#     plt.plot(history.history['val_loss'])
-#     plt.title('Evolution of training and validation error for model {}'.format(model_name) + f"_batch_{batch_size}")
-#     plt.ylabel('loss')
-#     plt.xlabel('epoch')
-#     plt.legend(['train', 'validation'], loc='best')
-#     plt.show()
-#     name = (str(model_name) + '-' + str(batch_size))
-#     plt.savefig(f'Final.png')
-#     print(name)
-#     val_error = history.history['val_loss']
-#     return test_loss, test_accuracy, val_error[-1]
-#
+
 #
 # # Define hyperparameters and architectures to test
 # # hidden_units_list = [4, 8, 16, 32, 64, 128, 256]
 # # hidden_layers_list = [1, 2, 3]
 # # batch_sizes = [8, 16, 32, 64, 128, 256]
-#
-# #final used architecture
+
+# # final used architecture
 # hidden_units_list = [32]
 # hidden_layers_list = [2]
 # batch_sizes = [128]
 # epochs = 300
-#
-# # Create a table to store results
+# #
+# # # Create a table to store results
 # results = []
 # for batch_size in batch_sizes:
 #     # Loop through different architectures and evaluate
 #     for hidden_units in hidden_units_list:
 #         for hidden_layers in hidden_layers_list:
-#             model, model_name, early_stopping = create_NNM(hidden_units, hidden_layers)
-#             test_loss, test_accuracy, val_error = train_evaluate_model(model, x_train, y_train, x_val, y_val,
-#                                                                        batch_size, epochs, model_name, x_test, y_test,
-#                                                                        early_stopping)
+#             model, model_name = create_NNM_regression(hidden_units, hidden_layers)
+#             train_loss, test_accuracy, val_error = train_evaluate_model_with_val(model, x_train, y_train, x_val, y_val,
+#                                                                            batch_size, epochs, x_test, y_test)
 #
-#             results.append([hidden_units, hidden_layers, test_loss, batch_size, val_error])
+#
+#             results.append([hidden_units, hidden_layers, train_loss, batch_size, val_error])
 #
 # # Print the results in a table
 # print(" Hidden Units | Hidden Layers | batch size | Train Error | Val Error")
@@ -372,6 +586,51 @@ df_info = df.describe()
 # print("Best Hyperparameters for Momentum SGD:", best_params)
 # print("Best MSE for Momentum SGD:", best_mse)
 
+# =======================================================================================================================
+# =======================================================================================================================
+
+# Other Try
+
+
+# model, model_name = create_NNM_regression_ADAM(hidden_units, hidden_layers)
+# train_loss, test_accuracy, val_error = train_evaluate_model_with_val(model, x_train, y_train, x_val, y_val,
+#                                                                     batch_size, epochs, x_test, y_test)
+# print(" Classifier | Train Error |  Val Error")
+# print("{}|{}|{}".format("Adam", train_loss, val_error))
+#
+# model, model_name = create_NNM_regression_SGD(hidden_units, hidden_layers)
+# train_loss, test_accuracy, val_error = train_evaluate_model_with_val(model, x_train, y_train, x_val, y_val,
+#                                                                     batch_size, epochs, x_test, y_test)
+# print(" Classifier | Train Error |  Val Error")
+# print("{}|{}|{}".format("SGD", train_loss, val_error))
+#
+# model, model_name = create_NNM_regression_momSGD(hidden_units, hidden_layers)
+# train_loss, test_accuracy, val_error = train_evaluate_model_with_val(model, x_train, y_train, x_val, y_val,
+#                                                                     batch_size, epochs, x_test, y_test)
+# print(" Classifier | Train Error |  Val Error")
+# print("{}|{}|{}".format("momSGD", train_loss, val_error))
+
+#
+# learning_rates = [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5]
+# results = []
+#
+# for learning_rate in learning_rates:
+#     model, model_name = create_NNM_regression_learning_rate(hidden_units, hidden_layers, learning_rate)
+#     train_loss, test_accuracy, val_error = train_evaluate_model_with_val(model, x_train, y_train, x_val, y_val,
+#                                                                          batch_size, epochs, x_test, y_test)
+#     results.append([learning_rate, "no", train_loss, val_error])
+#
+# for learning_rate in learning_rates:
+#     lr_schedule = schedules.ExponentialDecay(
+#         learning_rate, decay_steps=1000, decay_rate=0.9, staircase=True)
+#     model, model_name = create_NNM_regression_learning_rate(hidden_units, hidden_layers, lr_schedule)
+#     train_loss, test_accuracy, val_error = train_evaluate_model_with_val(model, x_train, y_train, x_val, y_val,
+#                                                                          batch_size, epochs, x_test, y_test)
+#     results.append([learning_rate, "yes", train_loss, val_error])
+#
+# print(" Learning Rate | Scheduled | Train Error |  Val Error")
+# for result in results:
+#     print("{}|{}|{}|{}".format(result[0], result[1], result[2], result[3]))
 
 # ------------------------------------------------------ d -------------------------------------------------------------
 # final used architecture
@@ -379,71 +638,18 @@ hidden_units = 32
 hidden_layers = 2
 batch_size = 128
 epochs = 300
+learning_rate = 0.01
+lr_schedule = schedules.ExponentialDecay(
+        learning_rate, decay_steps=1000, decay_rate=0.9, staircase=True)
 
+model, model_name = create_NNM_regression_learning_rate(hidden_units, hidden_layers, lr_schedule)
 
-def create_NNM(hidden_units, hidden_layers):
-    model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
+train_evaluate_model_with_val(model, x_train, y_train, x_val, y_val,
+                              batch_size, epochs, x_test, y_test)
 
-    # Configure the model layers
-    model = Sequential()
+train_loss, test_accuracy, loss = train_evaluate_model_whole_training_set(model, x_train_full, y_train_full,
+                                                                         batch_size, epochs, model_name, x_test, y_test)
 
-    # Input layer
-    model.add(Dense(units=hidden_units, input_dim=8, kernel_initializer='normal', activation='tanh'))
-
-    # Hidden layers
-    for _ in range(hidden_layers):
-        model.add(Dense(hidden_units, activation='tanh'))
-
-    # Only one output layer since we have a regression task
-    model.add(Dense(1, activation='linear'))
-    # Compiling the model
-    model.summary()
-
-    model.compile(loss='mean_squared_error', optimizer="adam", metrics=['mse'])
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=15, restore_best_weights=True)
-
-    return model, model_name, early_stopping
-
-
-# Define a function to train the model and return training and validation errors
-def train_evaluate_model(model, x_train, y_train, batch_size, epochs, model_name, x_test, y_test,
-                         early_stopping):
-    # Configure the model training procedure
-    history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs,
-                        verbose=0)
-
-    test_loss, test_accuracy = model.evaluate(x_test, y_test, batch_size=batch_size)
-    y_pred = model.predict(x_test)
-
-    # # # plot results
-    plt.figure()
-    plt.plot(history.history['loss'])
-    plt.title('Evolution of training error for model {}'.format(model_name) + f"_batch_{batch_size}")
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'validation'], loc='best')
-    plt.show()
-    plt.savefig(f'figures/Whole_training.png')
-
-    plt.scatter(y_pred, y_test)
-    plt.xlabel('predicted values')
-    plt.ylabel('test values')
-    plt.title('Scatter Plot predicted vs. test')
-    plt.show()
-    plt.savefig('figures/Scatterplot_predicted_test.png')
-
-
-
-    loss = history.history['loss']
-    return test_loss, test_accuracy, loss[-1]
-
-
-
-
-model, model_name, early_stopping = create_NNM(hidden_units, hidden_layers)
-test_loss, test_accuracy, loss = train_evaluate_model(model, x_train_full, y_train_full,
-                                                           batch_size, epochs, model_name, x_test, y_test,
-                                                           early_stopping)
 print("Whole training set")
 print("Train Error")
 print("{}".format(loss))
@@ -456,69 +662,11 @@ print("{}".format(loss))
 # batch_size = 128
 # epochs = 300
 #
-# # output layer
-# # model.add(Dense(1, activation='sigmoid'))
-#
-#
-# # compile
-# # model.compile(optimizer='your_optimizer', loss='binary_crossentropy', metrics=['accuracy'])
-#
 # y_train[y_train < 2], y_test[y_test < 2] = 0, 0
 # y_train[y_train >= 2], y_test[y_test >= 2] = 1, 1
 #
-#
-# # neural network model
-# def create_NNM(hidden_units, hidden_layers):
-#     model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
-#
-#     # Configure the model layers
-#     model = Sequential()
-#
-#     # Input layer
-#     model.add(Dense(units=hidden_units, input_dim=8, kernel_initializer='normal', activation='tanh'))
-#
-#     # Hidden layers
-#     for _ in range(hidden_layers):
-#         model.add(Dense(hidden_units, activation='tanh'))
-#
-#     # Only one output layer since we have a regression task
-#     model.add(Dense(1, activation='sigmoid'))
-#
-#     # Compiling the model
-#     model.summary()
-#
-#     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-#     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=30, restore_best_weights=True)
-#
-#     return model, model_name, early_stopping
-#
-#
-# # Define a function to train the model and return training and validation errors
-# def train_evaluate_model(model, x_train, y_train, batch_size, epochs, model_name, x_test, y_test,
-#                          early_stopping):
-#     # Configure the model training procedure
-#     history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs,
-#                         verbose=0, callbacks=[early_stopping])
-#
-#     test_loss, test_accuracy = model.evaluate(x_test, y_test, batch_size=batch_size)
-#
-#     # # # plot results
-#     plt.figure()
-#     plt.plot(history.history['loss'])
-#     plt.title(
-#         'Binary evolution of training and validation error for model {}'.format(model_name) + f"_batch_{batch_size}")
-#     plt.ylabel('loss')
-#     plt.xlabel('epoch')
-#     plt.legend(['train', 'validation'], loc='best')
-#     plt.show()
-#     name = (str(model_name) + '-' + str(batch_size))
-#     plt.savefig(f'Binary.png')
-#
-#     return test_loss, test_accuracy
-#
-#
-# model, model_name, early_stopping = create_NNM(hidden_units, hidden_layers)
-# test_loss, test_accuracy = train_evaluate_model(model, x_train, y_train, batch_size, epochs, model_name,
-#                                                 x_test, y_test, early_stopping)
+# model, model_name = create_NNM_classification_classification(hidden_units, hidden_layers)
+# train_loss, test_accuracy = train_evaluate_model_classification(model, x_train, y_train, batch_size, epochs, model_name,
+#                                                                x_test, y_test)
 # print("Test Loss | Test accuracy")
-# print("{}|{}".format(test_loss, test_accuracy))
+# print("{}|{}".format(train_loss, test_accuracy))
