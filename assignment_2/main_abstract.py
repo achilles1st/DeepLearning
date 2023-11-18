@@ -132,7 +132,7 @@ class HousingRegressionModel:
                     model, model_name = self.create_NNM_regression(hidden_units, hidden_layers, optimizer="adam")
                     train_loss, test_accuracy, val_error = self.train_evaluate_model_with_val(
                         model, model_name, self.x_train, self.y_train, self.x_val, self.y_val, batch_size, epochs,
-                        self.x_test, self.y_test, callback=False)
+                        self.x_test, self.y_test)
 
                     results.append([hidden_units, hidden_layers, train_loss, batch_size, val_error])
 
@@ -152,23 +152,23 @@ class HousingRegressionModel:
 
         model, model_name = self.create_NNM_regression(hidden_units, hidden_layers, optimizer=Adam())
         train_loss, test_accuracy, val_error = self.train_evaluate_model_with_val(model, model_name, self.x_train, self.y_train, self.x_val, self.y_val,
-                                                                             batch_size, epochs, self.x_test, self.y_test, callback=False)
+                                                                             batch_size, epochs, self.x_test, self.y_test)
         print(" Classifier | Train Error |  Val Error")
         print("{}|{}|{}".format("Adam", train_loss, val_error))
 
         model, model_name = self.create_NNM_regression(hidden_units, hidden_layers, optimizer=SGD())
         train_loss, test_accuracy, val_error = self.train_evaluate_model_with_val(model, model_name, self.x_train, self.y_train, self.x_val, self.y_val,
-                                                                             batch_size, epochs, self.x_test, self.y_test, callback=False)
+                                                                             batch_size, epochs, self.x_test, self.y_test)
         print(" Classifier | Train Error |  Val Error")
         print("{}|{}|{}".format("SGD", train_loss, val_error))
 
         model, model_name = self.create_NNM_regression(hidden_units, hidden_layers, optimizer=momSGD())
         train_loss, test_accuracy, val_error = self.train_evaluate_model_with_val(model, model_name, self.x_train, self.y_train, self.x_val, self.y_val,
-                                                                             batch_size, epochs, self.x_test, self.y_test, callback=False)
+                                                                             batch_size, epochs, self.x_test, self.y_test)
         print(" Classifier | Train Error |  Val Error")
         print("{}|{}|{}".format("momSGD", train_loss, val_error))
 
-        learning_rates = [0.0001, 0.001, 0.01, 0.1, 0.5]
+        learning_rates = [0.0001, 0.001, 0.01, 0.1]
         results = []
 
         # iterate over the learning rates and print the results of the best model, which in our case is adam see results
@@ -176,15 +176,16 @@ class HousingRegressionModel:
         for learning_rate in learning_rates:
             model, model_name = self.create_NNM_regression_learning_rate(hidden_units, hidden_layers, learning_rate)
             train_loss, test_accuracy, val_error = self.train_evaluate_model_with_val(model, model_name, self.x_train, self.y_train, self.x_val, self.y_val,
-                                                                                 batch_size, epochs, self.x_test, self.y_test, callback=False)
+                                                                                 batch_size, epochs, self.x_test, self.y_test)
             results.append([learning_rate, "no", train_loss, val_error])
             print(f":{model_name}_trLoss: {train_loss}_valLoss: {val_error}_noEarlyStopping")
 
-        # with early stopping
+        # with learning schedual
         for learning_rate in learning_rates:
-            model, model_name = self.create_NNM_regression_learning_rate(hidden_units, hidden_layers, learning_rate)
+            lr_schedule = schedules.ExponentialDecay(learning_rate, decay_steps=1000, decay_rate=0.9, staircase=True)
+            model, model_name = self.create_NNM_regression_learning_rate(hidden_units, hidden_layers, lr_schedule)
             train_loss, test_accuracy, val_error = self.train_evaluate_model_with_val(model, model_name, self.x_train, self.y_train, self.x_val, self.y_val,
-                                                                                 batch_size, epochs, self.x_test, self.y_test, callback=True)
+                                                                                 batch_size, epochs, self.x_test, self.y_test)
             results.append([learning_rate, "yes", train_loss, val_error])
             print(f":{model_name}_trLoss: {train_loss}_valLoss: {val_error}_earlyStopping")
 
@@ -285,17 +286,14 @@ class HousingRegressionModel:
 
 
     def train_evaluate_model_with_val(self, model, model_name, x_train, y_train, x_val, y_val, batch_size, epochs,
-                                      x_test, y_test, callback=True):
+                                      x_test, y_test):
+
         # Configure the model training procedure
+        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True)
 
-        if callback == True:
-            early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True)
+        history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=epochs,
+                            verbose=0, callbacks=[early_stopping])
 
-            history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=epochs,
-                                verbose=0, callbacks=[early_stopping])
-        else:
-            history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=epochs,
-                                verbose=0)
 
         train_loss, test_accuracy = model.evaluate(x_test, y_test, batch_size=batch_size)
 
@@ -317,7 +315,7 @@ class HousingRegressionModel:
         return train_loss[-1], test_accuracy, val_error[-1]
 
     def train_evaluate_model_whole_training_set(self, model, model_name, x_train, y_train, batch_size, epochs, x_test, y_test):
-        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='mse', patience=30, restore_best_weights=True)
+        early_stopping = keras.callbacks.EarlyStopping(monitor='mse', patience=30, restore_best_weights=True)
 
         history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs,
                             verbose=0, callbacks=[early_stopping])
@@ -335,46 +333,46 @@ class HousingRegressionModel:
         plt.show()
         plt.savefig(f'figures/Whole_training.png')
 
-        y = np.arange(0, len(y_pred), 1)
-
+        x = np.polyfit(y_test, y_pred, 1)
+        z = np.array([x[0][0], x[1][0]])
+        p = np.poly1d(z)
         plt.figure()
-        plt.scatter(y_pred)
-        plt.scatter(y_test)
-        plt.legend(title="Set", loc="upper right")
-
-        plt.xlabel('predicted values')
+        plt.scatter(y_test, y_pred)
+        plt.plot(y_test, p(y_test), color='red')
+        plt.xlabel('test values')
+        plt.ylabel('pred values')
         plt.title('Scatter Plot predicted vs. test')
         plt.show()
-        plt.savefig('figures/Scatterplot_predicted_test.png')
+        plt.savefig('figures/Scatterplot_predicted_test_trendline.png')
 
         loss = history.history['loss']
         return train_loss, test_accuracy, loss[-1]
 
     def train_evaluate_model_classification(self, model, model_name, x_train, y_train, batch_size, epochs, x_test,
                                             y_test):
-        early_stopping = EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True)
+        early_stopping = EarlyStopping(monitor='loss', patience=30, restore_best_weights=True)
 
         history = model.fit(
             x_train, y_train,
-            validation_data=(x_test, y_test),
             batch_size=batch_size,
             epochs=epochs,
             verbose=1,
             callbacks=[early_stopping]
         )
 
-        train_loss = history.history['loss'][-1]
-        test_accuracy = history.history['accuracy'][-1]
+        train_loss, test_accuracy = model.evaluate(x_test, y_test, batch_size=batch_size)
 
-        # Visualize the learning curves
-        plt.plot(history.history['loss'], label='train_loss')
-        plt.plot(history.history['accuracy'], label='train_accuracy')
-        plt.plot(history.history['val_loss'], label='test_loss')
-        plt.plot(history.history['val_accuracy'], label='test_accuracy')
-        plt.title('Training and Testing Loss & Accuracy')
-        plt.xlabel('Epochs')
-        plt.legend()
+        plt.figure()
+        plt.plot(history.history['loss'])
+        plt.title(
+            'Binary evolution of training and validation error for model {}'.format(
+                model_name) + f"_batch_{batch_size}")
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'validation'], loc='best')
         plt.show()
+        name = (str(model_name) + '-' + str(batch_size))
+        plt.savefig(f'Binary.png')
 
         return train_loss, test_accuracy
 
@@ -413,7 +411,7 @@ if __name__ == '__main__':
  #   model_instance.execute_part_b(extreme_training="YES_Please")
 
     # executing once with and once without early stopping
-    #model_instance.execute_part_c()
+    model_instance.execute_part_c()
 
 
     #model_instance.execute_part_d()
