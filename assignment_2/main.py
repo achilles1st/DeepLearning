@@ -19,7 +19,7 @@ from keras.callbacks import EarlyStopping
 
 
 # ---------------------------------------------------Functions----------------------------------------------------------
-# ------------------------------------------------------ a -------------------------------------------------------------
+# ------------------------------------------------------ b -------------------------------------------------------------
 # neural network model
 
 
@@ -73,7 +73,7 @@ def train_evaluate_model_with_val(model, x_train, y_train, x_val, y_val, batch_s
     return train_loss[-1], test_accuracy, val_error[-1]
 
 
-# ------------------------------------------------------ e -------------------------------------------------------------
+# ------------------------------------------------------ c -------------------------------------------------------------
 
 
 def create_NNM_regression_ADAM(hidden_units, hidden_layers):
@@ -192,14 +192,25 @@ def train_evaluate_model_whole_training_set(model, x_train, y_train, batch_size,
     plt.show()
     plt.savefig(f'figures/Whole_training.png')
 
+    x = np.polyfit(y_test, y_pred, 1)
+    z = np.array([x[0][0], x[1][0]])
+    p = np.poly1d(z)
+    plt.figure()
+    plt.scatter(y_test, y_pred)
+    plt.plot(y_test, p(y_test), color='red')
+    plt.xlabel('test values')
+    plt.ylabel('pred values')
+    plt.title('Scatter Plot predicted vs. test')
+    plt.show()
+    plt.savefig('figures/Scatterplot_predicted_test_trendline.png')
+
     y = np.arange(0, len(y_pred), 1)
 
     plt.figure()
-    plt.scatter(y, abs(y_pred))
+    plt.scatter(y, y_pred)
     plt.scatter(y, y_test)
-    plt.legend(title="Set", loc="upper right")
-
-    plt.xlabel('predicted values')
+    plt.legend()
+    plt.ylabel('values')
     plt.title('Scatter Plot predicted vs. test')
     plt.show()
     plt.savefig('figures/Scatterplot_predicted_test.png')
@@ -208,7 +219,9 @@ def train_evaluate_model_whole_training_set(model, x_train, y_train, batch_size,
     return train_loss, test_accuracy, loss[-1]
 
 
-# ------------------------------------------------------ d -------------------------------------------------------------
+
+
+# ------------------------------------------------------ e -------------------------------------------------------------
 
 
 def create_NNM_classification_classification(hidden_units, hidden_layers):
@@ -276,10 +289,7 @@ df['Target_price'] = y_train  # target values
 scaler = MinMaxScaler(feature_range=(0, 1))
 x_train = scaler.fit_transform(x_train)
 x_test = scaler.transform(x_test)
-
-scaler = MinMaxScaler(feature_range=(0, 1))
 x_train_full = scaler.fit_transform(x_train_full)
-x_test = scaler.transform(x_test)
 
 # Construct a validation set with 25% test
 x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.25, random_state=42)
@@ -289,6 +299,7 @@ hidden_units = 32
 hidden_layers = 2
 batch_size = 128
 epochs = 300
+learning_rate = 0.01
 
 # ------------------------------------------------------Mains------------------------------------------------------------
 # ------------------------------------------------------ a -------------------------------------------------------------
@@ -543,18 +554,6 @@ epochs = 300
 #     return mse
 #
 #
-# # Load data
-# data_dict = pickle.load(open('california-housing-dataset.pkl', 'rb'))
-# x_train, y_train = data_dict['x_train'], data_dict['y_train']
-# x_test, y_test = data_dict['x_test'], data_dict['y_test']
-#
-# # Normalize data
-# scaler = MinMaxScaler(feature_range=(0, 1))
-# scaled_x_train = scaler.fit_transform(x_train)
-# scaled_x_test = scaler.transform(x_test)
-#
-# # Split data into training and validation sets
-# x_train, x_val, y_train, y_val = train_test_split(scaled_x_train, y_train, test_size=0.2, random_state=42)
 #
 # num_trials = 100
 #
@@ -586,8 +585,8 @@ epochs = 300
 # print("Best Hyperparameters for Momentum SGD:", best_params)
 # print("Best MSE for Momentum SGD:", best_mse)
 
-# =======================================================================================================================
-# =======================================================================================================================
+# ======================================================================================================================
+# ======================================================================================================================
 
 # Other Try
 
@@ -634,13 +633,8 @@ epochs = 300
 
 # ------------------------------------------------------ d -------------------------------------------------------------
 # final used architecture
-hidden_units = 32
-hidden_layers = 2
-batch_size = 128
-epochs = 300
-learning_rate = 0.01
 lr_schedule = schedules.ExponentialDecay(
-        learning_rate, decay_steps=1000, decay_rate=0.9, staircase=True)
+    learning_rate, decay_steps=1000, decay_rate=0.9, staircase=True)
 
 model, model_name = create_NNM_regression_learning_rate(hidden_units, hidden_layers, lr_schedule)
 
@@ -648,7 +642,8 @@ train_evaluate_model_with_val(model, x_train, y_train, x_val, y_val,
                               batch_size, epochs, x_test, y_test)
 
 train_loss, test_accuracy, loss = train_evaluate_model_whole_training_set(model, x_train_full, y_train_full,
-                                                                         batch_size, epochs, model_name, x_test, y_test)
+                                                                          batch_size, epochs, model_name, x_test,
+                                                                          y_test)
 
 print("Whole training set")
 print("Train Error")
@@ -656,12 +651,6 @@ print("{}".format(loss))
 
 # ------------------------------------------------------ e -------------------------------------------------------------
 
-#
-# hidden_units = 32
-# hidden_layers = 2
-# batch_size = 128
-# epochs = 300
-#
 # y_train[y_train < 2], y_test[y_test < 2] = 0, 0
 # y_train[y_train >= 2], y_test[y_test >= 2] = 1, 1
 #
