@@ -13,11 +13,7 @@ from keras.optimizers import schedules
 
 import tensorflow as tf
 import keras
-from sklearn.metrics import mean_squared_error
-from keras.models import Sequential
-from keras.layers import Dense, Input, Dropout, Activation
-from keras.callbacks import EarlyStopping
-
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import numpy as np
 import pickle
 from keras.models import Sequential
@@ -174,19 +170,21 @@ class HousingRegressionModel:
         # above
         for learning_rate in learning_rates:
             model, model_name = self.create_NNM_regression_learning_rate(hidden_units, hidden_layers, learning_rate)
+            model_name = model_name + f"_lr: {learning_rate}"
             train_loss, test_accuracy, val_error = self.train_evaluate_model_with_val(model, model_name, self.x_train, self.y_train, self.x_val, self.y_val,
                                                                                  batch_size, epochs, self.x_test, self.y_test)
             results.append([learning_rate, "no", train_loss, val_error])
-            print(f":{model_name}_trLoss: {train_loss}_valLoss: {val_error}_noEarlyStopping")
+            print(f"{model_name}_trLoss: {train_loss}_valLoss: {val_error}_noSchedual_lr{learning_rate}")
 
-        # with learning schedual
+        # with learning schedule
         for learning_rate in learning_rates:
             lr_schedule = schedules.ExponentialDecay(learning_rate, decay_steps=1000, decay_rate=0.9, staircase=True)
             model, model_name = self.create_NNM_regression_learning_rate(hidden_units, hidden_layers, lr_schedule)
+            model_name = model_name + f"_lr: {learning_rate}"
             train_loss, test_accuracy, val_error = self.train_evaluate_model_with_val(model, model_name, self.x_train, self.y_train, self.x_val, self.y_val,
                                                                                  batch_size, epochs, self.x_test, self.y_test)
             results.append([learning_rate, "yes", train_loss, val_error])
-            print(f":{model_name}_trLoss: {train_loss}_valLoss: {val_error}_earlyStopping")
+            print(f"{model_name}_trLoss: {train_loss}_valLoss: {val_error}_schedual_lr{learning_rate}")
 
 
         print(" Learning Rate | Scheduled | Train Error |  Val Error")
@@ -222,15 +220,18 @@ class HousingRegressionModel:
         batch_size = 128
         epochs = 300
 
-        # y_train[y_train < 2], y_test[y_test < 2] = 0, 0
-        # y_train[y_train >= 2], y_test[y_test >= 2] = 1, 1
+        # Redefine target variables for binary classification
+        self.y_train_full[self.y_train_full < 2] = 0
+        self.y_train_full[self.y_train_full >= 2] = 1
+        self.y_test[self.y_test < 2] = 0
+        self.y_test[self.y_test >= 2] = 1
+
 
         model, model_name = self.create_NNM_classification_classification(hidden_units, hidden_layers)
         train_loss, test_accuracy = self.train_evaluate_model_classification(
-            model, self.x_train, self.y_train, batch_size, epochs, model_name, self.x_test, self.y_test
+            model, model_name, self.x_train_full, self.y_train_full, batch_size, epochs, self.x_test, self.y_test
         )
-        print("Test Loss | Test accuracy")
-        print("{}|{}".format(train_loss, test_accuracy))
+
 
     def create_NNM_regression(self, hidden_units, hidden_layers, optimizer):
         model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
@@ -251,7 +252,7 @@ class HousingRegressionModel:
         return model, model_name
 
     def create_NNM_regression_learning_rate(self, hidden_units, hidden_layers, lr_schedule):
-        model_name = "hl_{}_hu_{}_adam_lr_{}".format(hidden_layers, hidden_units, lr_schedule)
+        model_name = "hl_{}_hu_{}_adam".format(hidden_layers, hidden_units)
         # Configure the model layers
         model = Sequential()
         # Input layer
@@ -288,7 +289,7 @@ class HousingRegressionModel:
                                       x_test, y_test):
 
         # Configure the model training procedure
-        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True)
+        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
 
         history = model.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=batch_size, epochs=epochs,
                             verbose=0, callbacks=[early_stopping])
@@ -300,7 +301,7 @@ class HousingRegressionModel:
         plt.figure()
         plt.plot(history.history['loss'])
         plt.plot(history.history['val_loss'])
-        plt.title('Evolution of training and validation error for model {}'.format(model_name) + f"_batch_{batch_size}")
+        plt.title('training and validation error: {}'.format(model_name) + f"_batch_{batch_size}")
         plt.ylabel('loss')
         plt.xlabel('epoch')
         plt.legend(['train', 'validation'], loc='best')
@@ -345,35 +346,38 @@ class HousingRegressionModel:
         plt.savefig('figures/Scatterplot_predicted_test_trendline.png')
 
         loss = history.history['loss']
+
+        # Evaluate the final model on the test set
+        test_error = mean_squared_error(y_test, y_pred)
+
+        # Report the final test error
+        print(f"Final Test Error: {test_error:.4f}")
+
         return train_loss, test_accuracy, loss[-1]
 
     def train_evaluate_model_classification(self, model, model_name, x_train, y_train, batch_size, epochs, x_test,
                                             y_test):
         early_stopping = EarlyStopping(monitor='loss', patience=30, restore_best_weights=True)
 
-        history = model.fit(
-            x_train, y_train,
-            batch_size=batch_size,
-            epochs=epochs,
-            verbose=1,
-            callbacks=[early_stopping]
-        )
+        history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1,
+                            callbacks=[early_stopping])
 
-        train_loss, test_accuracy = model.evaluate(x_test, y_test, batch_size=batch_size)
+        # Evaluate the model on the test set
+        y_pred_proba = model.predict(x_test)
+        y_pred = (y_pred_proba > 0.5).astype(int)
 
-        plt.figure()
-        plt.plot(history.history['loss'])
-        plt.title(
-            'Binary evolution of training and validation error for model {}'.format(
-                model_name) + f"_batch_{batch_size}")
-        plt.ylabel('loss')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'validation'], loc='best')
-        plt.show()
-        name = (str(model_name) + '-' + str(batch_size))
-        plt.savefig(f'Binary.png')
+        # Print evaluation metrics
+        accuracy = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred)
+        recall = recall_score(y_test, y_pred)
+        f1 = f1_score(y_test, y_pred)
 
-        return train_loss, test_accuracy
+        print(f"Accuracy: {accuracy:.4f}")
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall: {recall:.4f}")
+        print(f"F1 Score: {f1:.4f}")
+
+        return accuracy, precision
 
 
     def create_NNM_regression_learning_rate(self, hidden_units, hidden_layers, learning_rate):
@@ -410,8 +414,8 @@ if __name__ == '__main__':
 #    model_instance.execute_part_b(extreme_training="no")
 
     # executing once with and once without early stopping
-    model_instance.execute_part_c()
+#    model_instance.execute_part_c()
 
 
-    #model_instance.execute_part_d()
-    # model_instance.execute_part_e()
+#  model_instance.execute_part_d()
+    model_instance.execute_part_e()
