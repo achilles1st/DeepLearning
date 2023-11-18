@@ -12,7 +12,7 @@ from keras.optimizers.legacy import SGD as momSGD
 from keras.optimizers import schedules
 
 import tensorflow as tf
-from tensorflow import keras
+import keras
 from sklearn.metrics import mean_squared_error
 from keras.models import Sequential
 from keras.layers import Dense, Input, Dropout, Activation
@@ -20,7 +20,6 @@ from keras.callbacks import EarlyStopping
 
 import numpy as np
 import pickle
-import optuna
 from keras.models import Sequential
 from keras.layers import Dense, BatchNormalization, Dropout
 from keras.optimizers import Adam
@@ -115,9 +114,9 @@ class HousingRegressionModel:
         # chose if you want to do extreme training or not
         # Define hyperparameters and architectures to test
         if extreme_training == "YES_Please":
-            hidden_units_list = [8, 32, 64, 128]
-            hidden_layers_list = [1, 2, 3]
-            batch_sizes = [10, 60, 128, 256]
+            hidden_units_list = [128, 64, 32, 8]
+            hidden_layers_list = [3, 2, 1]
+            batch_sizes = [256, 128, 64, 16]
             epochs = 300
         else:
             hidden_units_list = [32]
@@ -168,7 +167,7 @@ class HousingRegressionModel:
         print(" Classifier | Train Error |  Val Error")
         print("{}|{}|{}".format("momSGD", train_loss, val_error))
 
-        learning_rates = [0.0001, 0.001, 0.01, 0.1]
+        learning_rates = [0.1, 0.01, 0.001, 0.0001]
         results = []
 
         # iterate over the learning rates and print the results of the best model, which in our case is adam see results
@@ -405,10 +404,10 @@ if __name__ == '__main__':
     model_instance = HousingRegressionModel(data_dict)
 
     # Choose which part to execute
-    model_instance.execute_part_a()
+#    model_instance.execute_part_a()
     # b) takes quite a long time, so we would not recommend to not run it and instead just set the parameter to False,
     # but if you insist you can set the parameter to YES_Please
- #   model_instance.execute_part_b(extreme_training="YES_Please")
+#    model_instance.execute_part_b(extreme_training="no")
 
     # executing once with and once without early stopping
     model_instance.execute_part_c()
