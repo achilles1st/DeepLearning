@@ -19,7 +19,7 @@ class CNN:
         self.x_train, self.x_val, self.y_train, self.y_val = train_test_split(
             self.x_train, self.y_train, test_size=0.25, random_state=42, stratify=self.y_train
         )
-
+    #fuck stef
     def execute_a(self):
 
         print(self.x_train.shape)
