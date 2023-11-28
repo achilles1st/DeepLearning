@@ -19,7 +19,6 @@ class CNN:
         self.x_train, self.x_val, self.y_train, self.y_val = train_test_split(
             self.x_train, self.y_train, test_size=0.25, random_state=42, stratify=self.y_train
         )
-    #fuck stef
     def execute_a(self):
 
         print(self.x_train.shape)
@@ -50,12 +49,12 @@ class CNN:
         # learning_rates = [0.1, 0.01, 0.001, 0.0001]
         # scheduled = [True, False]
 
-        hidden_units_list = [64]
-        hidden_layers_list = [2]
-        batch_sizes = [64]
+        hidden_units_list = 64
+        hidden_layers_list = 2
+        batch_sizes = 64
         epochs = 300
-        learning_rates = [0.01]
-        scheduled = [True]
+        learning_rates = 0.01
+        scheduled = True
 
         model, modelname = self.create_CNN_classification(hidden_units_list, hidden_layers_list, learning_rates, scheduled)
 
@@ -67,7 +66,7 @@ class CNN:
         if scheduled:
             learning_rate = schedules.ExponentialDecay(learning_rate, decay_steps=1000, decay_rate=0.9, staircase=True)
 
-        for _ in range(len(hidden_layers)):
+        for _ in range(hidden_layers):
             model.add(layers.Conv2D(hidden_units, (3, 3), activation='relu', input_shape=(32, 32, 1)))
             model.add(layers.MaxPooling2D((2, 2)))
 
