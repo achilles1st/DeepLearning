@@ -44,31 +44,42 @@ class CNN:
 
     def execute_b(self):
 
-        # hidden_units_list = [128, 64, 32, 8]
-        # hidden_layers_list = [3, 2, 1]
-        # batch_sizes = [256, 128, 64, 16]
-        # epochs = 300
-        # learning_rates = [0.1, 0.01, 0.001, 0.0001]
-        # scheduled = [True, False]
-
-        hidden_units_list = 64
-        hidden_layers_list = 2
-        batch_sizes = 64
+        hidden_units_list = [256, 128, 64, 32, 8]
+        hidden_layers_list = [3, 2, 1]
+        batch_sizes = [256, 128, 64, 16]
         epochs = 300
-        learning_rates = 0.01
-        scheduled = True
+        learning_rates = [0.1, 0.01, 0.001, 0.0001]
+        scheduled = [True, False]
 
+        # hidden_units_list = [64]
+        # hidden_layers_list = [2]
+        # batch_sizes = [64]
+        # epochs = 4
+        # learning_rates = [0.001]
+        # scheduled = [True]
 
+        results = []
+        for hidden_unit in hidden_units_list:
+            for hidden_layer in hidden_layers_list:
+                for batch_size in batch_sizes:
+                    for learning_rate in learning_rates:
+                        for schedule in scheduled:
+                            model, modelname = self.create_CNN_classification(hidden_unit, hidden_layer,
+                                                                              learning_rate, schedule)
+                            accuracy, val_accuracy, loss, val_loss = self.train_evaluate_model(model,
+                                                                                               modelname,
+                                                                                               batch_size, epochs)
+                            results.append([hidden_unit, hidden_layer, batch_size, learning_rate, schedule, accuracy,
+                                            val_accuracy, loss, val_loss])
 
-
-
-        model, modelname = self.create_CNN_classification(hidden_units_list, hidden_layers_list, learning_rates,
-                                                          scheduled)
-        self.train_evaluate_model(model, modelname, self.x_train, self.y_train, self.x_val, self.y_val, batch_sizes,
-                                  epochs)
+        print("Hidden Units | Hidden Layers | batch size | Learning Rate | Schedule | Train Accuracy | Val Accuracy | "
+              " Train Error | Val Error")
+        for result in results:
+            print("{}|{}|{}|{}|{}|{}|{}|{}|{}".format(result[0], result[1], result[2], result[3], result[4],
+                                                      result[5], result[6], result[7], result[8]))
 
     def create_CNN_classification(self, hidden_units, hidden_layers, learning_rate, scheduled):
-        model_name = "hl_{}_hu_{}".format(hidden_layers, hidden_units)
+        model_name = "hl_{}_hu_{}_lr_{}_Sc_{}".format(hidden_layers, hidden_units, learning_rate, scheduled)
         # Configure the model layers
         model = Sequential()
         # Input layer
@@ -78,12 +89,11 @@ class CNN:
         # for _ in range(hidden_layers):
         model = models.Sequential()
 
-        model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 1), padding='VALID'))
-        model.add(layers.MaxPooling2D((2, 2)))
-        model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='VALID'))
-        model.add(layers.MaxPooling2D((2, 2)))
-        model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='VALID'))
-        model.add(layers.MaxPooling2D((2, 2)))
+        for count, _ in enumerate(range(hidden_layers)):
+            model.add(layers.Conv2D(hidden_units / (2 ** count), (3, 3), activation='relu', input_shape=(32, 32, 1),
+                                    padding='VALID'))
+            model.add(layers.MaxPooling2D((2, 2)))
+            print(hidden_units / (2 ** count))
 
         model.add(layers.Flatten())
         model.add(layers.Dense(512, activation='relu'))
@@ -97,29 +107,50 @@ class CNN:
 
         return model, model_name
 
-    def train_evaluate_model(self, model, model_name, x_train, y_train, x_val, y_val, batch_size, epochs):
-        # Configure the model training procedure
-        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
+    def train_evaluate_model(self, model, model_name, batch_size, epochs):
+        name = (str(model_name) + '_Bs_' + str(batch_size))
+        print(name)
 
+        # Configure the model training procedure
+        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=16,
+                                                          restore_best_weights=True)
 
         history = model.fit(self.x_train, self.y_train, epochs=epochs, batch_size=batch_size,
                             validation_data=(self.x_val, self.y_val), callbacks=[early_stopping])
         # # plot results
-        plt.figure()
-        plt.plot(history.history['loss'])
-        plt.plot(history.history['val_loss'])
-        plt.title('training and validation error: {}'.format(model_name) + f"_batch_{batch_size}")
-        plt.ylabel('loss')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'validation'], loc='best')
-        plt.show()
+
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
+
+        # First plot (top)
+        ax1.plot(history.history['accuracy'])
+        ax1.plot(history.history['val_accuracy'])
+        ax1.set_ylabel('accuracy')
+        ax1.set_xlabel('epoch')
+        ax1.set_title('Accuracy')
+        ax1.legend(['train', 'validation'], loc='best')
+
+        # Second plot (bottom)
+        ax2.plot(history.history['loss'])
+        ax2.plot(history.history['val_loss'])
+        ax2.set_ylabel('loss')
+        ax2.set_xlabel('epoch')
+        ax2.set_title('Loss')
+        ax2.legend(['train', 'validation'], loc='best')
+        # Adjust layout to prevent overlapping
+        plt.tight_layout()
+
+        # Show the plots
+        # plt.show()
+
         name = (str(model_name) + '-' + str(batch_size))
         plt.savefig(f'figures/{name}.png')
 
-        val_error = history.history['val_loss']
-        train_loss = history.history['loss']
+        accuracy = history.history['accuracy']
+        val_accuracy = history.history['val_accuracy']
+        loss = history.history['loss']
+        val_loss = history.history['val_loss']
 
-        return train_loss[-1], val_error[-1]
+        return accuracy[-1], val_accuracy[-1], loss[-1], val_loss[-1]
 
 
 if __name__ == '__main__':
