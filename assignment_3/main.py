@@ -82,8 +82,9 @@ class CNN:
 
     def execute_b(self):
 
-        filters_list = [64, 32, 8]
+        filters_list = [8, 16, 32, 64]
         batch_sizes = [128, 64, 32, 16]
+        hidden_layers_list = [3, 2, 1]
         epochs = 300
 
         # filters_list = [64]
@@ -97,110 +98,32 @@ class CNN:
         results = []
         for filters in filters_list:
             for batch_size in batch_sizes:
-                model, modelname = self.create_CNN_classification_3_layers(filters)
-                accuracy, val_accuracy, loss, val_loss = self.train_evaluate_model(model,
-                                                                                   modelname,
-                                                                                   batch_size, epochs)
-                results.append([filters, 3, batch_size, accuracy, val_accuracy, loss, val_loss])
-
-                model, modelname = self.create_CNN_classification_2_layers(filters)
-                accuracy, val_accuracy, loss, val_loss = self.train_evaluate_model(model,
-                                                                                   modelname,
-                                                                                   batch_size, epochs)
-                results.append([filters, 2, batch_size, accuracy, val_accuracy, loss, val_loss])
-
-                model, modelname = self.create_CNN_classification_1_layer(filters)
-                accuracy, val_accuracy, loss, val_loss = self.train_evaluate_model(model,
-                                                                                   modelname,
-                                                                                   batch_size, epochs)
-                results.append([filters, 1, batch_size, accuracy, val_accuracy, loss, val_loss])
+                for layer in hidden_layers_list:
+                    model, modelname = self.create_CNN_classification_3_layers(filters, layer)
+                    accuracy, val_accuracy, loss, val_loss = self.train_evaluate_model(model,
+                                                                                       modelname,
+                                                                                       batch_size, epochs)
+                    results.append([filters, layer, batch_size, accuracy, val_accuracy, loss, val_loss])
 
         print("Filters | Hidden Layers | batch size |  Train Accuracy | Val Accuracy | Train Error | Val Error")
         for result in results:
             print("{}|{}|{}|{}|{}|{}|{}|".format(result[0], result[1], result[2], result[3], result[4],
                                                  result[5], result[6]))
 
-    def create_CNN_classification_3_layers(self, filters):
-        model_name = "hl_{}_fi_{}".format(2, filters)
+    def create_CNN_classification_3_layers(self, filters, layer):
+        model_name = "hl_{}_fi_{}".format(layer, filters)
 
         # input layer
-        input_image = Input(shape=(32, 32, 1))
+        model = models.Sequential()
 
-        # convolution layers
-        l1 = layers.Conv2D(filters=filters, kernel_size=(3, 3), activation='relu', padding='VALID')(input_image)
-        l1 = layers.MaxPooling2D((2, 2))(l1)
+        for count, _ in enumerate(range(layer)):
+            model.add(layers.Conv2D(filters*(2 ** count), (3, 3), activation='relu', input_shape=(32, 32, 1),
+                                    padding='VALID'))
+            model.add(layers.MaxPooling2D((2, 2)))
 
-        l2 = layers.Conv2D(filters=filters * 2, kernel_size=(3, 3), activation='relu', padding='VALID')(l1)
-        l2 = layers.MaxPooling2D((2, 2))(l2)
-
-        l3 = layers.Conv2D(filters=filters * 4, kernel_size=(3, 3), activation='relu', padding='VALID')(l2)
-        l3 = layers.MaxPooling2D((2, 2))(l3)
-
-        l4 = layers.Flatten()(l3)
-        l5 = layers.Dense(units=1024, activation='relu')(l4)
-        l6 = layers.Dense(units=20, activation='relu')(l5)
-        y_pred = layers.Dense(units=20)(l6)
-
-        model = Model(input_image, y_pred)
-
-        model.summary()
-
-        lr_rates = [1e-3, 1e-4, 1e-5]
-        lr_boundaries = [1000,1500]
-        lr_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, lr_rates)
-
-        model.compile(optimizer= tf.keras.optimizers.Adam(learning_rate=lr_fn),
-                      loss='categorical_crossentropy',
-                      metrics=['accuracy'])
-        return model, model_name
-
-    def create_CNN_classification_2_layers(self, filters):
-        model_name = "hl_{}_fi_{}".format(1, filters)
-
-        # input layer
-        input_image = Input(shape=(32, 32, 1))
-
-        # convolution layers
-        l1 = layers.Conv2D(filters=filters, kernel_size=(3, 3), activation='relu', padding='VALID')(input_image)
-        l1 = layers.MaxPooling2D((2, 2))(l1)
-
-        l3 = layers.Conv2D(filters=filters * 4, kernel_size=(3, 3), activation='relu', padding='VALID')(l1)
-        l3 = layers.MaxPooling2D((2, 2))(l3)
-
-        l4 = layers.Flatten()(l3)
-        l5 = layers.Dense(units=1024, activation='relu')(l4)
-        l6 = layers.Dense(units=20, activation='relu')(l5)
-        y_pred = layers.Dense(units=20)(l6)
-
-        model = Model(input_image, y_pred)
-
-        model.summary()
-
-        lr_rates = [1e-3, 1e-4, 1e-5]
-        lr_boundaries = [1000, 1500]
-        lr_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, lr_rates)
-
-        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=lr_fn),
-                      loss='categorical_crossentropy',
-                      metrics=['accuracy'])
-        return model, model_name
-
-    def create_CNN_classification_1_layer(self, filters):
-        model_name = "hl_{}_fi_{}".format(3, filters)
-
-        # input layer
-        input_image = Input(shape=(32, 32, 1))
-
-        # convolution layers
-        l1 = layers.Conv2D(filters=filters, kernel_size=(3, 3), activation='relu', padding='VALID')(input_image)
-        l1 = layers.MaxPooling2D((2, 2))(l1)
-
-        l4 = layers.Flatten()(l1)
-        l5 = layers.Dense(units=1024, activation='relu')(l4)
-        l6 = layers.Dense(units=20, activation='relu')(l5)
-        y_pred = layers.Dense(units=20)(l6)
-
-        model = Model(input_image, y_pred)
+        model.add(layers.Flatten())
+        model.add(layers.Dense(512, activation='relu'))
+        model.add(layers.Dense(20, activation='softmax'))  # Output layer with 20 classes
 
         model.summary()
 
