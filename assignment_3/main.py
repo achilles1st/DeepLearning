@@ -82,17 +82,17 @@ class CNN:
                 plt.axis('off')
 
         plt.tight_layout()
-        plt.savefig('/content/drive/MyDrive/figures/classes.png')
+        #plt.savefig('/content/drive/MyDrive/figures/classes.png')
         plt.show()
 
     def execute_a(self):
-
+        # print shapes of train and test data
         print(self.x_train.shape)
         print(self.y_train.shape)
 
         print(self.x_test.shape)
         print(self.y_test.shape)
-        # plot 3 random samples from each class (10 classes)
+        # plot 3 random samples from each class (20 classes)
         self.plot_samples(self.x_train, self.y_train,
                           class_labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
                           num_samples=1)
@@ -133,7 +133,6 @@ class CNN:
 
 
     def execute_c(self):
-
         filters = 64
         layer = 3
         batch_size = 128
@@ -147,11 +146,11 @@ class CNN:
         results = []
         for dropout in dropout_list:
             for l2 in l2_list:
-              model, modelname = self.create_CNN_model_regu_dropout(filters, layer, dropout, l2)
-              accuracy, val_accuracy, loss, val_loss = self.train_evaluate_model_regu(model,
+                model, modelname = self.create_CNN_model_regu_dropout(filters, layer, dropout, l2)
+                accuracy, val_accuracy, loss, val_loss = self.train_evaluate_model_regu(model,
                                                                                        modelname,
                                                                                        batch_size, epochs)
-              results.append([dropout, l2, accuracy, val_accuracy, loss, val_loss])
+                results.append([dropout, l2, accuracy, val_accuracy, loss, val_loss])
 
         print("Dropout Rate | L2 |  Train Accuracy | Val Accuracy | Train Error | Val Error")
         for result in results:
@@ -159,132 +158,128 @@ class CNN:
                                                  result[5]))
 
     def execute_d(self):
+        filters = 64
+        layer = 3
+        batch_size = 128
+        epochs = 5
 
-      filters = 64
-      layer = 3
-      batch_size = 128
-      epochs = 5
+        dropout = 0.1
+        l2 = 0.0001
 
-      dropout = 0.1
-      l2 = 0.0001
+        results = []
+        model, modelname = self.create_CNN_model_regu_dropout(filters, layer, dropout, l2)
 
+        # accuracy, val_accuracy, loss, val_loss = self.train_evaluate_model_regu(model, modelname, batch_size, epochs)
+        accuracy, loss, test_loss , test_acc = self.train_evaluate_model_whole(model, modelname, batch_size, epochs)
+        results.append([accuracy, loss, test_loss, test_acc])
 
-
-
-      results = []
-      model, modelname = self.create_CNN_model_regu_dropout(filters, layer, dropout, l2)
-
-      # accuracy, val_accuracy, loss, val_loss = self.train_evaluate_model_regu(model, modelname, batch_size, epochs)
-      accuracy, loss, test_loss , test_acc = self.train_evaluate_model_whole(model, modelname, batch_size, epochs)
-      results.append([accuracy, loss, test_loss, test_acc])
-
-      print("Train Accuracy | Train Error | Test Error | Test Acc")
-      for result in results:
-          print("{}|{}|{}|{}".format(result[0], result[1], result[2], result[3]))
+        print("Train Accuracy | Train Error | Test Error | Test Acc")
+        for result in results:
+            print("{}|{}|{}|{}".format(result[0], result[1], result[2], result[3]))
 
     def execute_e(self):
-      filters = 64
-      layer = 3
-      batch_size = 128
-      epochs = 300
+        # parameters
+        filters = 64
+        layer = 3
+        batch_size = 128
+        epochs = 300
 
-      dropout = 0.1
-      l2 = 0.0001
-      l1_list = [0.1, 0.01, 0.001, 0.0001]
-      batch_list = [True,False]
-      augment_list = [True,False]
-
-
-      model, modelname = self.create_CNN_model_regu_dropout(filters, layer, dropout, l2)
-
-      accuracy, val_accuracy, loss, val_loss = self.train_evaluate_model_regu(model, modelname, batch_size, epochs)
-      accuracy, loss, test_loss , test_acc = self.train_evaluate_model_whole(model, modelname, batch_size, epochs)
-
-      perturb_loss, perturb_accuracy = model.evaluate(self.x_perturb, self.y_perturb, batch_size=batch_size)
-
-      print("Perturb Accuracy | Perturb Error")
-      print("{}|{}".format(perturb_loss, perturb_accuracy))
+        dropout = 0.1
+        l2 = 0.0001
+        # to be iterated over
+        l1_list = [0.1, 0.01, 0.001, 0.0001]
+        batch_list = [True,False]
+        augment_list = [True,False]
 
 
-    # iterate over all wanted values and build and train a coresponding model
-      results = []
-      for l1 in l1_list:
-          for batch in batch_list:
-            for augment in augment_list:
-              model, modelname = self.create_CNN_model_regu_dropout_norm(filters, layer, dropout, l2, l1, batch)
-              accuracy, loss = self.train_evaluate_model_regu_augment(model,
-                                                                                        modelname,
-                                                                                        batch_size, epochs, augment)
-              results.append([l1, batch,augment, accuracy, loss])
+        model, modelname = self.create_CNN_model_regu_dropout(filters, layer, dropout, l2)
 
-      print("L1| Batch Normalization |  Augment | Train Accuracy | Train Error")
-      for result in results:
-          print("{}|{}|{}|{}|{}|{}|".format(result[0], result[1], result[2], result[3], result[4]))
+        accuracy, val_accuracy, loss, val_loss = self.train_evaluate_model_regu(model, modelname, batch_size, epochs)
+        accuracy, loss, test_loss , test_acc = self.train_evaluate_model_whole(model, modelname, batch_size, epochs)
+
+        perturb_loss, perturb_accuracy = model.evaluate(self.x_perturb, self.y_perturb, batch_size=batch_size)
+
+        print("Perturb Accuracy | Perturb Error")
+        print("{}|{}".format(perturb_loss, perturb_accuracy))
+
+
+        # iterate over all wanted values and build and train a coresponding model
+        results = []
+        for l1 in l1_list:
+            for batch in batch_list:
+                for augment in augment_list:
+                    model, modelname = self.create_CNN_model_regu_dropout_norm(filters, layer, dropout, l2, l1, batch)
+                    accuracy, loss = self.train_evaluate_model_regu_augment(model, modelname, batch_size, epochs, augment)
+                    results.append([l1, batch,augment, accuracy, loss])
+
+        print("L1| Batch Normalization |  Augment | Train Accuracy | Train Error")
+        for result in results:
+            print("{}|{}|{}|{}|{}|{}|".format(result[0], result[1], result[2], result[3], result[4]))
 
     def create_CNN_model_regu_dropout(self, filters, layer, dropout, l2_regu):
-      model_name = "hl_{}_fi_{}".format(layer, filters)
+        model_name = "hl_{}_fi_{}".format(layer, filters)
 
         # input layer
-      model = models.Sequential()
-
-      for count, _ in enumerate(range(layer)):
-          model.add(layers.Conv2D(filters*(2 ** count), (3, 3), activation='relu', kernel_regularizer=l2(l2_regu), input_shape=(32, 32, 1),
+        model = models.Sequential()
+        # create layerd model
+        for count, _ in enumerate(range(layer)):
+            model.add(layers.Conv2D(filters*(2 ** count), (3, 3), activation='relu', kernel_regularizer=l2(l2_regu), input_shape=(32, 32, 1),
                                   padding='VALID'))
-          model.add(layers.MaxPooling2D((2, 2)))
-          model.add(Dropout(dropout))
+            model.add(layers.MaxPooling2D((2, 2)))
+            model.add(Dropout(dropout))
 
-      model.add(layers.Flatten())
-      model.add(layers.Dense(512, activation='relu', kernel_regularizer=l2(l2_regu)))
-      model.add(layers.Dense(20, activation='softmax'))  # Output layer with 20 classes
+        model.add(layers.Flatten())
+        model.add(layers.Dense(512, activation='relu', kernel_regularizer=l2(l2_regu)))
+        model.add(layers.Dense(20, activation='softmax'))  # Output layer with 20 classes
 
-      model.summary()
+        model.summary()
 
-      lr_rates = [1e-3, 1e-4, 1e-5]
-      lr_boundaries = [1000, 1500]
-      lr_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, lr_rates)
+        lr_rates = [1e-3, 1e-4, 1e-5]
+        lr_boundaries = [1000, 1500]
+        lr_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, lr_rates)
 
-      model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=lr_fn),
+        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=lr_fn),
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
-      return model, model_name
+        return model, model_name
 
     def create_CNN_model_regu_dropout_norm(self, filters, layer, dropout, l2_regu, l1_regu, BatchNorm):
-      model_name = "hl_{}_fi_{}".format(layer, filters)
+        model_name = "hl_{}_fi_{}".format(layer, filters)
 
         # input layer
-      model = models.Sequential()
+        model = models.Sequential()
 
-      for count, _ in enumerate(range(layer)):
-          model.add(layers.Conv2D(filters*(2 ** count), (3, 3), activation='relu', kernel_regularizer=l1_l2(l1=l1_regu, l2=l2_regu), input_shape=(32, 32, 1),
+        for count, _ in enumerate(range(layer)):
+            model.add(layers.Conv2D(filters*(2 ** count), (3, 3), activation='relu', kernel_regularizer=l1_l2(l1=l1_regu, l2=l2_regu), input_shape=(32, 32, 1),
                                   padding='VALID'))
-          if BatchNorm:
+            if BatchNorm:
+                model.add(layers.BatchNormalization())
+            model.add(layers.MaxPooling2D((2, 2)))
+            model.add(Dropout(dropout))
+
+        model.add(layers.Flatten())
+        model.add(layers.Dense(512, activation='relu', kernel_regularizer=l1_l2(l1=l1_regu, l2=l2_regu)))
+        if BatchNorm:
             model.add(layers.BatchNormalization())
-          model.add(layers.MaxPooling2D((2, 2)))
-          model.add(Dropout(dropout))
+        model.add(layers.Dense(20, activation='softmax'))  # Output layer with 20 classes
 
-      model.add(layers.Flatten())
-      model.add(layers.Dense(512, activation='relu', kernel_regularizer=l1_l2(l1=l1_regu, l2=l2_regu)))
-      if BatchNorm:
-        model.add(layers.BatchNormalization())
-      model.add(layers.Dense(20, activation='softmax'))  # Output layer with 20 classes
+        model.summary()
 
-      model.summary()
+        lr_rates = [1e-3, 1e-4, 1e-5]
+        lr_boundaries = [1000, 1500]
+        lr_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, lr_rates)
 
-      lr_rates = [1e-3, 1e-4, 1e-5]
-      lr_boundaries = [1000, 1500]
-      lr_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, lr_rates)
-
-      model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=lr_fn),
+        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=lr_fn),
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
-      return model, model_name
+        return model, model_name
 
 
 
     def create_CNN_model(self, filters, layer):
+        # create model name
         model_name = "hl_{}_fi_{}".format(layer, filters)
 
-        # input layer
         model = models.Sequential()
 
         for count, _ in enumerate(range(layer)):
@@ -473,7 +468,8 @@ if __name__ == '__main__':
     perturb = pickle.load(open("cifar20_perturb_test.pkl", "rb"))
     train_data, test_data = tfd.cifar100.load_data(label_mode="coarse")
     model_instance = CNN(train_data, test_data, perturb)
-    # model_instance.execute_a()
-    # model_instance.execute_b()
-    # model_instance.execute_c()
+    model_instance.execute_a()
+    model_instance.execute_b()
+    model_instance.execute_c()
     model_instance.execute_d()
+    model_instance.execute_e()
